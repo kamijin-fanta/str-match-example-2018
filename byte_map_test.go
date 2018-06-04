@@ -4,15 +4,17 @@ import (
 	"testing"
 	"fmt"
 	"github.com/pkg/errors"
-	"math/rand"
 	"strings"
+	"math/rand"
 	"os"
 	"strconv"
+	"github.com/cloudflare/ahocorasick"
 )
 
 var randomTargetSet []string
 var randomTermSet []string
-var termIndex ByteMap
+var termIndex *ByteMap
+var dict *ahocorasick.Matcher
 
 var TARGETS = 1000
 var TARGET_LEN = 150
@@ -33,26 +35,6 @@ func init() {
 	if res != 0 {
 		TERM_LEN_MIN = res
 	}
-
-	// 検索対象を初期化
-	targetSet := make([]string, TARGETS)
-	rand.Seed(0)
-	for i := range targetSet {
-		targetSet[i] = RandString(TARGET_LEN)
-	}
-	randomTargetSet = targetSet
-
-	// ブラックリストを初期化
-	termSet := make([]string, TERMS)
-	for i := range termSet {
-		if TERM_LEN_MAX == TERM_LEN_MIN {
-			termSet[i] = RandString(TERM_LEN_MIN)
-		} else {
-			termSet[i] = RandString(TERM_LEN_MIN + rand.Intn(TERM_LEN_MAX-TERM_LEN_MIN))
-		}
-	}
-	randomTermSet = termSet
-	termIndex = GenerateIndex(randomTermSet)
 }
 
 func assert(t *testing.T, b bool) {
@@ -84,7 +66,40 @@ func TestIndexOf(t *testing.T) {
 	assert(t, pos == 18 && *match == "bar🔥")
 }
 
+func InitBenchmark() {
+	// 検索対象を初期化
+	if randomTargetSet == nil {
+		targetSet := make([]string, TARGETS)
+		rand.Seed(0)
+		for i := range targetSet {
+			targetSet[i] = RandString(TARGET_LEN)
+		}
+		randomTargetSet = targetSet
+	}
+	// ブラックリストを初期化
+	if randomTermSet == nil {
+		termSet := make([]string, TERMS)
+		for i := range termSet {
+			if TERM_LEN_MAX == TERM_LEN_MIN {
+				termSet[i] = RandString(TERM_LEN_MIN)
+			} else {
+				termSet[i] = RandString(TERM_LEN_MIN + rand.Intn(TERM_LEN_MAX-TERM_LEN_MIN))
+			}
+		}
+		randomTermSet = termSet
+	}
+	if termIndex == nil {
+		index := GenerateIndex(randomTermSet)
+		termIndex = &index
+	}
+	if dict == nil {
+		dict = ahocorasick.NewStringMatcher(randomTermSet)
+	}
+}
+
 func BenchmarkNormal(b *testing.B) {
+	InitBenchmark()
+	b.ResetTimer()
 	foundCount := 0
 	for i := 0; i < b.N; i++ {
 		target := randomTargetSet[i%TARGETS]
@@ -98,8 +113,19 @@ func BenchmarkNormal(b *testing.B) {
 		}
 	}
 }
+
 func BenchmarkBitMap(b *testing.B) {
+	InitBenchmark()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		termIndex.Find(randomTargetSet[i%TARGETS])
+	}
+}
+
+func BenchmarkAhocorasick(b *testing.B) {
+	InitBenchmark()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dict.Match([]byte(randomTargetSet[i%TARGETS]))
 	}
 }
