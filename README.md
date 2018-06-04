@@ -18,3 +18,14 @@ ImplimentA founds: 709 time: 6.439321
 ImplimentB index done time: 0.329813
 ImplimentB founds: 709 time: 0.341806
 ```
+
+ベンチマーク
+
+```
+TERMS=10000 go test -bench . -benchtime 5s -benchmem
+BenchmarkNormal-8                  10000           1146952 ns/op               0 B/op          0 allocs/op
+BenchmarkBitMap-8                2000000              3602 ns/op               0 B/op          0 allocs/op
+BenchmarkAhocorasick-8           1000000              9222 ns/op             160 B/op          1 allocs/op
+PASS
+ok      str-match-example-2018   35.663s
+```
