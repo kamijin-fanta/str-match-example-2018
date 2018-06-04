@@ -1,14 +1,11 @@
 package main
 
 import (
-	"math/rand"
 	"fmt"
-	"time"
+	"math/rand"
 	"strings"
+	"time"
 )
-
-func init() {
-}
 
 var strArray = []rune("abcdefghijklmnopqrstuvwxyz")
 
@@ -18,11 +15,6 @@ func RandString(n int) string {
 		b[i] = strArray[rand.Intn(len(strArray))]
 	}
 	return string(b)
-}
-
-type ByteMap struct {
-	values  [256]*ByteMap
-	results [256]*string
 }
 
 func main() {
@@ -67,43 +59,14 @@ func main() {
 	// ByteMapバージョン
 	start = time.Now()
 	// Index構築
-	blackIndex := ByteMap{[256]*ByteMap{}, [256]*string{}}
-	for bi := range blackSet {
-		blackTerm := blackSet[bi]
-		currentIndex := &blackIndex
-		for i := 0; i < len(blackTerm)-1; i++ {
-			code := blackTerm[i]
-			if currentIndex.values[code] == nil {
-				currentIndex.values[code] = &ByteMap{[256]*ByteMap{}, [256]*string{}}
-			}
-			currentIndex = currentIndex.values[code]
-		}
-		lastCode := blackTerm[len(blackTerm)-1]
-		currentIndex.results[lastCode] = &blackTerm
-	}
-	//fmt.Printf("  %v\n", *blackIndex.values[117].values[106].values[113].values[106].results[100]) // ujqjd
+	blackIndex := GenerateIndex(blackSet)
 	fmt.Printf("ImplimentB index done time: %f\n", time.Since(start).Seconds())
 
 	foundCount = 0
 	for ti := range targetSet {
 		target := targetSet[ti]
-		found := -1 // 検索対象が存在した位置
-	SEARCH_LOOP:
-		for i := 0; i < len(target); i++ { // targetの文字ごとにループを回す
-			currentIndex := &blackIndex
-			for i2 := 0; i+i2 < len(target); i2++ {
-				code := target[i+i2]
-				if currentIndex.results[code] != nil {
-					found = i + i2
-					break SEARCH_LOOP // 検索対象が含まれることが分かったので、検索終了
-				}
-				if currentIndex.values[code] == nil { // Indexに存在しないので検索終了
-					break
-				}
-				currentIndex = currentIndex.values[code] // 次のTreeは見つかったが、resultは無いのでループ続行
-			}
-		}
-		if found != -1 {
+		res, _ := blackIndex.Find(target)
+		if res != -1 {
 			foundCount += 1
 		}
 	}
