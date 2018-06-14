@@ -12,6 +12,7 @@ import (
 )
 
 var randomTargetSet []string
+var randomTargetByteSet [][]byte
 var randomTermSet []string
 var termIndex *ByteMap
 var dict *ahocorasick.Matcher
@@ -70,11 +71,14 @@ func InitBenchmark() {
 	// 検索対象を初期化
 	if randomTargetSet == nil {
 		targetSet := make([]string, TARGETS)
+		targetByteSet := make([][]byte, TARGETS)
 		rand.Seed(0)
 		for i := range targetSet {
 			targetSet[i] = RandString(TARGET_LEN)
+			targetByteSet[i] = []byte(targetSet[i])
 		}
 		randomTargetSet = targetSet
+		randomTargetByteSet = targetByteSet
 	}
 	// ブラックリストを初期化
 	if randomTermSet == nil {
@@ -92,12 +96,37 @@ func InitBenchmark() {
 		index := GenerateIndex(randomTermSet)
 		termIndex = &index
 	}
-	if dict == nil {
-		dict = ahocorasick.NewStringMatcher(randomTermSet)
+	//if dict == nil {
+	//	dict = ahocorasick.NewStringMatcher(randomTermSet)
+	//}
+}
+
+func BenchmarkSearchIndexOf(b *testing.B) {
+	InitBenchmark()
+	inputArr := []string{"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36"}
+	//dictArr := []string{
+	//	"libcurl", "Wget", "Googlebot", "APIs-Google",
+	//	"Bingbot", "Slurp", "DuckDuckBot", "Baiduspider",
+	//	"YandexBot", "Sogou", "Exabot", "facebot",
+	//	"facebookexternalhit", "ia_archiver", "Twitterbot", "Slackbot",
+	//}
+	dictArr := randomTermSet
+	foundCount := 0
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		input := inputArr[i%len(inputArr)]
+		for _, term := range dictArr {
+			res := strings.Index(input, term)
+			if res != -1 {
+				foundCount += 1
+				break
+			}
+		}
 	}
 }
 
-func BenchmarkNormal(b *testing.B) {
+func BenchmarkSearchNormal(b *testing.B) {
 	InitBenchmark()
 	b.ResetTimer()
 	foundCount := 0
@@ -114,7 +143,7 @@ func BenchmarkNormal(b *testing.B) {
 	}
 }
 
-func BenchmarkBitMap(b *testing.B) {
+func BenchmarkSearchBitMap(b *testing.B) {
 	InitBenchmark()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -122,10 +151,16 @@ func BenchmarkBitMap(b *testing.B) {
 	}
 }
 
-func BenchmarkAhocorasick(b *testing.B) {
+func BenchmarkSearchAhocorasick(b *testing.B) {
 	InitBenchmark()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dict.Match([]byte(randomTargetSet[i%TARGETS]))
+		dict.Match([]byte(randomTargetByteSet[i%TARGETS]))
 	}
+}
+
+
+type StringLike struct {
+	data *[]byte
+	len int
 }

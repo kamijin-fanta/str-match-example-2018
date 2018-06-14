@@ -1,7 +1,7 @@
 package main
 
 type ByteMap struct {
-	node   [256]*ByteMap
+	node   map[byte]*ByteMap
 	result *string
 }
 
@@ -23,14 +23,14 @@ func (byteMap *ByteMap) Find(target string) (int, *string) {
 }
 
 func GenerateIndex(terms []string) ByteMap {
-	index := ByteMap{[256]*ByteMap{}, nil}
+	index := ByteMap{make(map[byte]*ByteMap), nil}
 	for bi := range terms {
 		blackTerm := terms[bi]
 		currentIndex := &index
 		for i := 0; i < len(blackTerm); i++ {
 			code := blackTerm[i]
 			if currentIndex.node[code] == nil {
-				currentIndex.node[code] = &ByteMap{[256]*ByteMap{}, nil}
+				currentIndex.node[code] = &ByteMap{make(map[byte]*ByteMap), nil}
 			}
 			currentIndex = currentIndex.node[code]
 		}

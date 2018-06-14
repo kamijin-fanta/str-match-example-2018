@@ -8,7 +8,7 @@ type ByteMap struct {
 ```
 
 - "abcd" のASCIIコードは 97, 98, 99, 100
-- `index.values[97].values[98].values[99].results[100] = "abcd"` となるようにIndexを構築する
+- `index.values[97].values[98].values[99].values[100].result = &"abcd"` となるようにIndexを構築する
 - 1文字づつシフトして検索し、 "abcd" "bcd" "cd" "d" と順に検索する
 
 ```
